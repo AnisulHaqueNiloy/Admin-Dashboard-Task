@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -8,6 +8,8 @@ import { useForm } from "react-hook-form";
 
 const AllProducts = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
   const {
     data: products,
     isLoading,
@@ -20,6 +22,47 @@ const AllProducts = () => {
       return res.data;
     },
   });
+
+  const {
+    register: addRegister,
+    handleSubmit: handleAddSubmit,
+    reset: resetAddForm,
+    formState: { errors: addErrors },
+  } = useForm();
+
+  const handleAddProduct = async (data) => {
+    try {
+      const newProduct = {
+        name: data.name,
+        data: {
+          price: data.price,
+          category: data.category,
+          description: data.description,
+        },
+      };
+
+      const res = await axios.post(
+        "https://api.restful-api.dev/objects",
+        newProduct
+      );
+      console.log(res.data);
+      resetAddForm();
+      refetch();
+      Swal.fire({
+        icon: "success",
+        title: `${data.name} has been added!`,
+        showConfirmButton: false,
+        timer: 1000,
+      });
+      setIsAddModalOpen(false);
+    } catch (error) {
+      console.error("Error adding product:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Failed to add product. Please try again.",
+      });
+    }
+  };
 
   const hdelete = (id) => {
     Swal.fire({
@@ -63,6 +106,13 @@ const AllProducts = () => {
     <div className="p-6 bg-gray-100 min-h-screen">
       <h1 className="text-3xl font-bold text-center mb-6">All Products</h1>
 
+      <button
+        className="mb-4 bg-blue-500 text-white py-2 px-4 rounded-md"
+        onClick={() => setIsAddModalOpen(true)}
+      >
+        Add Product
+      </button>
+
       {/* Search  */}
       <input
         type="text"
@@ -83,7 +133,7 @@ const AllProducts = () => {
               className="cursor-pointer"
               onClick={() => hdelete(product.id)}
             >
-              <FaDeleteLeft className="absolute right-0 top-0 text-2xl pr-1"></FaDeleteLeft>
+              <FaDeleteLeft className="absolute right-0 top-0 text-2xl pr-1" />
             </button>
             <div>
               {product.data &&
@@ -102,6 +152,98 @@ const AllProducts = () => {
           </div>
         ))}
       </div>
+
+      {isAddModalOpen && (
+        <div className="fixed inset-0   bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4">Add New Product</h2>
+            <form onSubmit={handleAddSubmit(handleAddProduct)}>
+              <div className="mb-4">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Product Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  {...addRegister("name", {
+                    required: "Product name is required",
+                  })}
+                  className="mt-1 block w-full px-3 py-2 border rounded-md"
+                />
+                {addErrors.name && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {addErrors.name.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor="price"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Price
+                </label>
+                <input
+                  id="price"
+                  type="text"
+                  {...addRegister("price", { required: "Price is required" })}
+                  className="mt-1 block w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor="category"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Category
+                </label>
+                <input
+                  id="category"
+                  type="text"
+                  {...addRegister("category", {
+                    required: "Category is required",
+                  })}
+                  className="mt-1 block w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  {...addRegister("description", {
+                    required: "Description is required",
+                  })}
+                  className="mt-1 block w-full px-3 py-2 border rounded-md"
+                ></textarea>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-blue-500 text-white py-2 px-4 rounded-md"
+              >
+                Add Product
+              </button>
+            </form>
+            <button
+              className="mt-4 w-full bg-gray-300 text-gray-700 py-2 px-4 rounded-md"
+              onClick={() => setIsAddModalOpen(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
